@@ -6,12 +6,7 @@ and reports both Player's scores each round."""
 import random
 import time
 
-# ledger for keeping track of score
-score1 = [int(0)]
-score2 = [int(0)]
-
 moves = ['rock', 'paper', 'scissors']
-moves2 = ['rock', 'paper', 'scissors']  # Used for Cycle Player mode
 
 
 def print_pause(message_to_print):
@@ -51,13 +46,8 @@ class HumanPlayer(Player):
     def move(self):
         while True:
             move = input("Rock, paper, or scissors? > ")
-            if move in moves:
-                break
-            else:
-                move = input("Rock, paper, or scissors? > ")
-                if move in moves:
-                    break
-        return move
+            if move.lower() in moves:
+                return move.lower()
 
 
 # New class created for reflect player-mode
@@ -80,18 +70,12 @@ class ReflectPlayer(Player):
 class CyclePlayer(Player):
     def __init__(self):
         Player.__init__(self)
-        self.last_round = None
+        self.move_cycle = random.choice(moves)
 
     def move(self):
-        if moves2 == []:
-            moves2.extend(['paper', 'rock', 'scissors'])
-            move = random.choice(moves2)
-            del moves2[moves2.index(move)]
-            return move
-        else:
-            move = random.choice(moves2)
-            del moves2[moves2.index(move)]
-            return move
+        self.move_cycle = moves[(moves.index(self.move_cycle) + 1) %
+                                len(moves)]
+        return self.move_cycle
 
 
 def beats(one, two):
@@ -104,6 +88,9 @@ class Game:
     def __init__(self, p1, p2):
         self.p1 = p1
         self.p2 = p2
+        # Score ledger:
+        self.score1 = [int(0)]
+        self.score2 = [int(0)]
 
     def play_round(self):
         move1 = self.p1.move()
@@ -114,21 +101,23 @@ class Game:
             print(bcolors.YELLOW + "** TIE **" + bcolors.END)
         elif beats(move1, move2) is True:
             print(bcolors.GREEN + "** PLAYER ONE WINS **" + bcolors.END)
-            score1.append(int(1))
+            self.score1.append(int(1))
         else:
             print(bcolors.RED + "** PLAYER TWO WINS **" + bcolors.END)
-            score2.append(int(1))
-        print(f"Score: Player One {sum(score1)}, Player Two {sum(score2)}\n")
+            self.score2.append(int(1))
+        print(f"Score: Player One {sum(self.score1)}, "
+              f"Player Two {sum(self.score2)}\n")
         self.p1.learn(move1, move2)
         self.p2.learn(move2, move1)
 
     def play_game(self):
         print_pause("\nGame start! (3 rounds total)\n")
-        for round in range(3):
-            print(f"Round {round}:")
+        number_of_rounds = 3
+        for round_number in range(number_of_rounds):
+            print(f"Round {round_number}:")
             self.play_round()
-        p1_total = sum(score1)
-        p2_total = sum(score2)
+        p1_total = sum(self.score1)
+        p2_total = sum(self.score2)
         # Display game results
         print("Final score:")
         print(f"Player One: {p1_total}; Player Two: {p2_total}\n")
@@ -149,7 +138,8 @@ class Game:
                     print("Game over!")
                     break
 
-# This function is used to determine whether to play single or multiple rounds
+    # This function is used to determine whether to play
+    # single or multiple rounds
     def select_game(self):
         if gamerounds == '1':
             game.play_round()
@@ -160,49 +150,36 @@ class Game:
 if __name__ == '__main__':
     print("Welcome to Rock Paper Scissors, Go!")
     while True:
-        print("Choose type of game:\n")
-        gametype = input("(1) Computer only; (2) Human vs Computer "
-                         "(1 or 2) > ")
-        if gametype == '1':
-            break
-        if gametype == '2':
-            break
-    while True:
         print("\nChoose how many rounds to play:")
-        gamerounds = input("(1) Single round; (2) Three rounds (1 or 2) > ")
+        gamerounds = input("(1) Single round; (2) Three rounds "
+                           "(Enter 1 or 2) > ")
         if gamerounds == '1':
             break
         if gamerounds == '2':
             break
-    if gametype == '1':  # Computer-only mode
-        game = Game(RandomPlayer(), RandomPlayer())
-        if gamerounds == '1':
-            game.play_round()
-        else:
-            game.play_game()
-    else:
-        while True:  # Human-player mode
-            print("\nChoose Computer opponent type:\n")
-            opponent = input("(1) Random; (2) Reflect; (3) Cycle; (4) Rock"
-                             "\n(enter 1, 2, 3, or 4) > ")
+    # Setting up for any combination of players:
+    print("\nChoose Player One:")
+    while True:
+        print('(1) Human; (2) Computer-Random; (3) Computer-Reflect\n'
+              '(4) Computer-Cycle; (5) Computer- Rock')
+        Input1 = input('Enter number > ')
+        List1 = [1, 2, 3, 4, 5]
+        if int(Input1) in List1:
+            break
+    del List1[List1.index(int(Input1))]
+    print("\nChoose Player Two (cannot be same as Player One):")
+    while True:
+        Input2 = input('Enter number > ')
+        if int(Input2) in List1:
+            break
 
-            if opponent == '1':
-                print("You selected Random-mode opponent")
-                game = Game(HumanPlayer(), RandomPlayer())
-                game.select_game()
-                break
-            elif opponent == '2':
-                print("You selected Reflect-mode opponent")
-                game = Game(HumanPlayer(), ReflectPlayer())
-                game.select_game()
-                break
-            elif opponent == '3':
-                print("You selected Cycle-mode opponent")
-                game = Game(HumanPlayer(), CyclePlayer())
-                game.select_game()
-                break
-            elif opponent == '4':
-                print("You selected Rock-mode opponent")
-                game = Game(HumanPlayer(), Player())
-                game.select_game()
-                break
+    Opponents = [HumanPlayer, RandomPlayer, ReflectPlayer, CyclePlayer, Player]
+
+    Player1 = Opponents[int(Input1) - 1]
+    Player2 = Opponents[int(Input2) - 1]
+
+    game = Game(Player1(), Player2())
+    if gamerounds == '1':
+        game.play_round()
+    else:
+        game.play_game()
